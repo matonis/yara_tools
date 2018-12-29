@@ -20,16 +20,18 @@ Did you know that a household butter knife can be used as:
 ```
 There has to be a better way.
 
-### Installation
-```bash
-python setup.py build && sudo python setup.py install
-```
+
 ### Be Advised
 *yara_tools* has no concept of enforcing YARA rules or conventions. It simply creates a properly-formatted YARA rule for you using standard nomenclature. Legal terms & definitions are responsibility of the user. 
 
 For more information on authoring YARA rules, please [read the docs.](https://yara.readthedocs.io/en/v3.8.1/gettingstarted.html)
 
 *yara-python* is highly advised to be used in parallel with *yara_tools*.
+
+### Installation
+```bash
+python setup.py build && sudo python setup.py install
+```
 
 ### Usage
 *yara_tools* has facilities for four primary aspects of a YARA rule:
