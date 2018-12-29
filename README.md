@@ -106,7 +106,10 @@ rule.add_strings(strings="MyStringToFind")
 
 A more complex example:
 ```python
-rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A Charm'],modifiers=['wide','ascii','nocase'],comment="Testing Inline Comments",condition="2 of ($IDENTIFIER*)")
+rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A Charm'],
+				modifiers=['wide','ascii','nocase'],
+				comment="Testing Inline Comments",
+				condition="2 of ($IDENTIFIER*)")
 ```
 * The *strings* parameter can be overloaded with a list. In this case, all strings are treated as one group.
 * The *modifiers* parameter can be a list or string and is used to modify strings in the rule.
@@ -116,7 +119,11 @@ rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A C
 Since strings are issued at random, more control over the identifier can be controlled inline:
 
 ```python
-rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A Charm'],modifiers=['wide','ascii','nocase'],comment="Testing Inline Comments",identifier="TESTING",condition="2 of ($IDENTIFIER*)")
+rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A Charm'],
+				modifiers=['wide','ascii','nocase'],
+				comment="Testing Inline Comments",
+				identifier="TESTING",
+				condition="2 of ($IDENTIFIER*)")
 ```
 * In this example, all strings will be identified with the $TESTING prefix.
 
@@ -131,7 +138,8 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read())
 Size limits can also be applied via the *add_binary_strings* method.
 
 ```python
-rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),comment="Applying size limits",size_limit=5)
+rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
+						comment="Applying size limits",size_limit=5)
 ```
 
 **Conditions**
