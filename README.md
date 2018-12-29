@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 yara_tools
 ===========
 
@@ -160,3 +161,7 @@ Here are some fun facts about yara_tools.
  * As of this writing, yara_tools is almost four years old! It was first created as a sub-project to version 2 of github.com/matonis/ripPE. ripPEv2 is an entire rewrite which was never released... and probably never will be! Wanna parse authenticode certs and automatically create YARA rules on them and so much more? Bribe me.
  * yara_tools was once referred to as *"too meta"* by one of the key developers behind YARA!
  * The author of yara_tools has no idea why they even wasted their time on this project. *See method "ret_complete_rule"*
+=======
+# yara_tools
+YARA via Python? Whhhhhhaatttt?
+>>>>>>> 85ac057776f3c151a3d471b491c6f8875c3ab00e
