@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 yara_tools
 ===========
 
@@ -62,6 +61,7 @@ except Exception as e:
 ```
 
 **Getting Started**
+
 Begin by importing yara_tools:
 ```python
 import yara_tools
@@ -74,17 +74,20 @@ rule=yara_tools.create_rule(name="my_rule")
 ```
 
 **Imports**
+
 ```python
 rule.add_import(import_name="pe")
 rule.add_import(import_name="cuckoo")
 rule.add_import(import_name="my_custom_package")
 ```
 **Includes**
+
 ```python
 rule.add_include(include_name="other_rule.yar")
 ```
 
 **Meta**
+
 Meta fields in YARA are completely arbitrary. Add as many as you would like.
 ```python
 rule.add_meta(key="author",value="matonis")
@@ -92,6 +95,7 @@ rule.add_meta(key="purpose",value="Testing my first yara_tools YARA rule!")
 ```
 
 **Strings**
+
 yara_tools allows for creation of traditional string constants and is controlled through the ***add_strings*** function. 
 
 Simple usage of *add_strings*
@@ -110,12 +114,14 @@ rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A C
 * The *condition* parameter is used to establish an arbitrary condition. A reserved word "IDENTIFIER" is used to give the author flexibility for the condition they wish to assign to a group of strings.
 
 Since strings are issued at random, more control over the identifier can be controlled inline:
+
 ```python
 rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A Charm'],modifiers=['wide','ascii','nocase'],comment="Testing Inline Comments",identifier="TESTING",condition="2 of ($IDENTIFIER*)")
 ```
 * In this example, all strings will be identified with the $TESTING prefix.
 
 **Binary Strings**
+
 *yara_tools* has support for binary data blobs which are translated into hex-strings. Parameters used in add_strings also apply to those used in *add_binary_strings*.
 
 ```python
@@ -129,6 +135,7 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),comment="Applying siz
 ```
 
 **Conditions**
+
 Conditions created via *add_condition* are order-based when compiled. It is recommended to apply file-based constraints/conditions prior to strings.
 * If a condition was provided inline to a string via *add_strings* or *add_binary_strings* then no control is needed as these carry priority.
 
@@ -150,6 +157,7 @@ rule.add_authoritative_condition(condition="any of them")
 ```
 
 **Building A Rule**
+
 Rules are built in *yara_tools* only if strings or a condition is present. A string-based rule is returned via:
 
 ```python
@@ -161,6 +169,3 @@ Here are some fun facts about yara_tools.
  * As of this writing, yara_tools is almost four years old! It was first created as a sub-project to version 2 of github.com/matonis/ripPE. ripPEv2 is an entire rewrite which was never released... and probably never will be! Wanna parse authenticode certs and automatically create YARA rules on them and so much more? Bribe me.
  * yara_tools was once referred to as *"too meta"* by one of the key developers behind YARA!
  * The author of yara_tools has no idea why they even wasted their time on this project. *See method "ret_complete_rule"*
-=======
-# yara_tools
-YARA via Python? Whhhhhhaatttt?
