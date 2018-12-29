@@ -164,4 +164,3 @@ Here are some fun facts about yara_tools.
 =======
 # yara_tools
 YARA via Python? Whhhhhhaatttt?
->>>>>>> 85ac057776f3c151a3d471b491c6f8875c3ab00e
