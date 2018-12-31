@@ -27,27 +27,26 @@ rule more_xor
 import yara_tools
 import yara
 
-EXECUTABLE_STRING="This program cannot be run in DOS mode"
-rule=yara_tools.create_rule(name="more_xor")
+EXECUTABLE_STRING = "This program cannot be run in DOS mode"
+rule = yara_tools.create_rule(name="more_xor")
 rule.add_condition(condition="uint32(0x00) == 0xe011cfd0")
 
 for xor_key in range(256):
-	xored_string=""
+	xored_string = ""
 	for c in EXECUTABLE_STRING:
-		xored_string+=chr(ord(c)^xor_key)
-	
+		xored_string += chr(ord(c) ^ xor_key)
+
 	rule.add_binary_strings(data=xored_string,
 							comment="XOR Key %s" % hex(xor_key),
 							identifier="xorstring",
 							condition="any of ($IDENTIFIER*)")
 
-generated_rule=rule.build_rule()
+generated_rule = rule.build_rule()
 
 try:
-	compiled_rule=yara.compile(source=generated_rule)
+	compiled_rule = yara.compile(source=generated_rule)
 	print generated_rule
 	print "SUCCESS: IT WORKED!"
 except Exception as e:
 	print "Failed... oh noes! %s" % e
 	print generated_rule
-
