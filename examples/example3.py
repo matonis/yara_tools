@@ -18,11 +18,12 @@ rule simple_shamoon
 		$RICH2 = {aa728172ee13ef21ee13ef21ee13ef2181657121fd13ef2181654421d813ef21816545219013ef21e76b7c21ff13ef21ee13ee214013ef2181654021e913ef2181657521ef13ef2181657221ef13ef21} //de07c4ac94a50663851e5dabe6e50d1f
 
 	condition:
-		(pe.imphash() == '4767fbf3ade8812b0583b2b20cb6dd46' or pe.imphash() == 'bc0eba48e65cc3ae72091c76f068f3e5' or pe.imphash() == '53e316887bac4e36b2dfef0e711a3d8e') or 
-		(any of ($RICH*))
+		pe.imphash() == '4767fbf3ade8812b0583b2b20cb6dd46' or 
+		any of ($RICH*) or 
+		pe.imphash() == 'bc0eba48e65cc3ae72091c76f068f3e5' or 
+		pe.imphash() == '53e316887bac4e36b2dfef0e711a3d8e'
 
 }
-
 
 '''
 import yara_tools
@@ -34,14 +35,7 @@ import os,sys
 rule=yara_tools.create_rule(name="simple_shamoon")
 
 rule.add_import(import_name="pe")
-rule.create_condition_group(name="imphashes",default_boolean='or')
-rule.create_condition_group(name="rich_headers")
 rule.set_default_boolean(value='or')
-
-#::Resource names placeholder
-RESOURCE_NAMES=set()
-RESOURCE_COUNT=set()
-
 
 #::loop through folder
 WORKING_FOLDER=os.path.expanduser(sys.argv[1])
@@ -50,35 +44,15 @@ for filename in os.listdir(WORKING_FOLDER):
 	PE_OBJ=pefile.PE(FILE)
 
 	#::imphash
-	rule.add_condition(condition="pe.imphash() == '%s'" % PE_OBJ.get_imphash(),
-						condition_group="imphashes")
+	rule.add_condition(condition="pe.imphash() == '%s'" % PE_OBJ.get_imphash())
 	
 	#::rich header
 	rule.add_binary_strings(data=PE_OBJ.RICH_HEADER.raw_data,
-							condition_group="rich_headers",
 							identifier="RICH",
 							condition="any of ($IDENTIFIER*)",
 							comment=filename) #::files stored as MD5
 
-	#::loop through resources
-	if hasattr(PE_OBJ, 'DIRECTORY_ENTRY_RESOURCE'):
-		for resource in PE_OBJ.DIRECTORY_ENTRY_RESOURCE.entries:
-			if hasattr(resource, 'directory'):
-				RESOURCE_COUNT.add(len(resource.directory.entries))
-				for e in resource.directory.entries:
-					if e.name:
-						RESOURCE_NAMES.add(str(e.name))
-'''
-rule.add_strings(strings=list(RESOURCE_NAMES),
-				condition_group='low_confidence_iocs',
-				modifiers='wide',
-				condition="all of ($IDENTIFIER*)"
-				)
-'''
-rule.add_condition(condition=rule.get_condition_group(name="imphashes"))
-rule.add_condition(condition=rule.get_condition_group(name="RICH"))
-
-generated_rule=rule.build_rule(str_condition_groups=True)
+generated_rule=rule.build_rule()
 
 try:
 	compiled_rule=yara.compile(source=generated_rule)
