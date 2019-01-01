@@ -14,14 +14,16 @@ class yara_tools(object):
 		"""."""
 		self.__name = str(rule_name)
 		self.__default_identifier = False
+		self.__identifier_template = "IDENTIFIER"
 		self.__strings = False  # ::list obj
 		self.__conditions = False  # ::list obj
 		self.__condition_groups = False  # ::dict obj
 		self.__imports = False  # ::set obj
 		self.__includes = False  # ::set obj
 		self.__rule_meta = False  # ::list obj
-		self.__reserved_identifiers = False
-		self.__default_condition = "all of"
+		self.__reserved_identifiers = [self.__identifier_template]
+		self.__default_condition = "all of them"
+		self.__default_str_condition = "all of"
 		self.__authoritative_condition = False
 		self.__default_boolean = "and"
 		self.__string_struct = {'type': '', 'identifier': '',
@@ -57,11 +59,13 @@ class yara_tools(object):
 
 		self.__rule_meta.append({str(key): str(value)})
 
-	def create_condition_group(self, name, default_boolean=False):
+	def create_condition_group(self, name, default_boolean=False, parent_group=False):
 		"""."""
-		def init_condition_group(name, default_boolean):
+		def init_condition_group(name, default_boolean, parent=False):
 			group_struct = {
-				'default_boolean': default_boolean, 'conditions': list()}
+				'default_boolean': default_boolean,
+				 'conditions': list(),
+				 'parent': parent}
 			self.__condition_groups[name] = deepcopy(group_struct)
 
 		if default_boolean:
@@ -72,10 +76,10 @@ class yara_tools(object):
 
 		if not self.__condition_groups:
 			self.__condition_groups = dict()
-			init_condition_group(name, default_boolean)
+			init_condition_group(name, default_boolean, parent_group)
 		else:
 			if not name in self.__condition_groups:
-				init_condition_group(name, default_boolean)
+				init_condition_group(name, default_boolean, parent_group)
 
 	def get_condition_group(self, name, new_boolean=False):
 		"""."""
@@ -101,25 +105,30 @@ class yara_tools(object):
 		else:
 			return False
 
-	def add_condition(self, condition, condition_group=False, default_boolean=False):
+	def add_condition(self, condition, condition_group=False, default_boolean=False, parent_group=False):
 		"""."""
 		if not self.__conditions:
 			self.__conditions = list()
 
 		if condition_group:
 			self.create_condition_group(
-				name=condition_group, default_boolean=default_boolean)
+				name=condition_group, default_boolean=default_boolean, parent_group=parent_group)
 			if type(condition) == list:
 				for c in condition:
-					self.__condition_groups[condition_group][
-						'conditions'].append(c)
+					if not c in self.__condition_groups[condition_group][
+							'conditions']: #::dev, unsure if we're breaking things
+						self.__condition_groups[condition_group][
+							'conditions'].append(c)
 			else:
 				if condition:
-					self.__condition_groups[condition_group][
-						'conditions'].append(condition)
+					if not condition in self.__condition_groups[condition_group][
+							'conditions']: #::dev, unsure if we're breaking things
+						self.__condition_groups[condition_group][
+							'conditions'].append(condition)
 		else:
 			if condition:
-				self.__conditions.append(str(condition))
+				if not condition in self.__conditions: #::dev, unsure if we're breaking things
+					self.__conditions.append(str(condition))
 
 	def add_authoritative_condition(self, condition):
 		"""."""
@@ -133,6 +142,10 @@ class yara_tools(object):
 	def set_default_condition(self, value):
 
 		self.__default_condition = str(value)
+
+	def set_default_str_condition(self,value):
+
+		self.__default_str_condition = str(value)
 
 	def set_default_identifier(self, value):
 		"""."""
@@ -148,8 +161,22 @@ class yara_tools(object):
 
 	def add_strings(self, strings, modifiers=False, identifier=False,
 					condition=False, condition_group=False, default_boolean=False,
-					string_type=False, comment=False):
+					string_type=False, comment=False, parent_group=False):
 		"""."""
+
+		def process_string_condition(condition,identifier,condition_group,default_boolean,parent_group):
+			
+			if type(condition) == list:
+				for i in range(len(condition)):
+					condition[i]=condition[i].replace(self.__identifier_template,identifier)
+			else:
+				condition=condition.replace(self.__identifier_template,identifier)
+
+			self.add_condition(condition=condition,
+								condition_group=condition_group,
+								default_boolean=default_boolean,
+								parent_group=parent_group)
+
 		if not self.__strings:
 			self.__strings = list()
 
@@ -157,16 +184,23 @@ class yara_tools(object):
 		reserved_identifiers = deepcopy(self.__reserved_identifiers)
 
 		if not identifier and not self.__default_identifier:
-			for char in chr(random.randint(97, 122)):
+			#::keep'n it traditional yara style
+			#:: If you're troubleshooting and arrived here, choose an identifier of your own. This won't scale.
+			for char in [115,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,97,116,117,118,119,120,121,122]:
+				char=chr(char)
 				if not self.__reserved_identifiers:
 					identifier = char
 					self.add_reserved_identifiers(value=identifier)
 					string_template['identifier'] = identifier
+					break
 				else:
 					if char not in self.__reserved_identifiers:
 						identifier = char
 						self.add_reserved_identifiers(value=identifier)
 						string_template['identifier'] = identifier
+						break
+					else:
+						continue
 				continue
 
 		elif self.__default_identifier and not identifier:
@@ -175,8 +209,24 @@ class yara_tools(object):
 		else:
 			string_template['identifier'] = str(identifier)
 
+		string_template['strings'] = strings
+		string_template['condition_group'] = condition_group
+		string_template['default_boolean'] = default_boolean
+
 		if condition:
 			string_template['condition'] = condition
+			process_string_condition(condition=string_template['condition'],
+									identifier=identifier,
+									condition_group=condition_group,
+									default_boolean=default_boolean,
+									parent_group=parent_group)
+		else:
+			string_template['condition'] = "%s ($%s*)" % (self.__default_str_condition,identifier)
+			process_string_condition(condition=string_template['condition'],
+									identifier=identifier,
+									condition_group=condition_group,
+									default_boolean=default_boolean,
+									parent_group=parent_group)
 
 		if modifiers:
 			string_template['modifiers'] = modifiers
@@ -184,22 +234,18 @@ class yara_tools(object):
 		if comment:
 			string_template['comment'] = comment
 
-		string_template['condition_group'] = condition_group
-
-		string_template['default_boolean'] = default_boolean
-
-		string_template['strings'] = strings
-
 		if string_type:
+			
 			string_template['type'] = str(string_type)
 		else:
+
 			string_template['type'] = 'str'
 
 		self.__strings.append(string_template)
 
 	def add_regex(self, regex, modifiers=False, identifier=False,
 				  condition=False, condition_group=False, default_boolean=False,
-				  comment=False):
+				  comment=False, parent_group=False):
 		"""."""
 		regex_template = "/%s/"
 
@@ -208,16 +254,19 @@ class yara_tools(object):
 				self.add_strings(strings=regex_template % regex[idx], modifiers=modifiers,
 								 identifier=identifier, condition=condition,
 								 string_type='regex', comment=comment,
-								 condition_group=condition_group, default_boolean=default_boolean)
+								 condition_group=condition_group, default_boolean=default_boolean,
+								 parent_group=parent_group)
 		else:
 			self.add_strings(strings=regex_template % regex, modifiers=modifiers,
 							 identifier=identifier, condition=condition,
 							 string_type='regex', comment=comment,
-							 condition_group=condition_group, default_boolean=default_boolean)
+							 condition_group=condition_group, default_boolean=default_boolean,
+							 parent_group=parent_group)
 
 	def add_binary_strings(self, data, size_limit=False, modifiers=False,
 						   identifier=False, condition=False,
-						   condition_group=False, default_boolean=False, comment=False):
+						   condition_group=False, default_boolean=False, comment=False,
+						   parent_group=False):
 		"""."""
 		binary_template = "{%s}"
 
@@ -238,11 +287,13 @@ class yara_tools(object):
 		self.add_strings(strings=data, modifiers=modifiers,
 						 identifier=identifier, condition=condition,
 						 string_type='binary', comment=comment,
-						 condition_group=condition_group, default_boolean=default_boolean)
+						 condition_group=condition_group, default_boolean=default_boolean,
+						 parent_group=parent_group)
 
 	def add_binary_as_string(self, data, modifiers=False,
 							 identifier=False, condition=False,
-							 condition_group=False, default_boolean=False, comment=False):
+							 condition_group=False, default_boolean=False, comment=False,
+							 parent_group=False):
 		"""."""
 		binary_template = "{%s}"
 
@@ -251,13 +302,15 @@ class yara_tools(object):
 				self.add_strings(strings=binary_template % bin_str, modifiers=modifiers,
 								 identifier=identifier, condition=condition,
 								 string_type='binary_str', comment=comment,
-								 condition_group=condition_group, default_boolean=default_boolean)
+								 condition_group=condition_group, default_boolean=default_boolean,
+								 parent_group=parent_group)
 
 		else:
 			self.add_strings(strings=binary_template % data, modifiers=modifiers,
 							 identifier=identifier, condition=condition,
 							 string_type='binary_str', comment=comment,
-							 condition_group=condition_group, default_boolean=default_boolean)
+							 condition_group=condition_group, default_boolean=default_boolean,
+							 parent_group=parent_group)
 
 	def process_strings(self, with_condition_groups=False):
 		"""."""
@@ -393,26 +446,6 @@ class yara_tools(object):
 					t_modifier=modifier, t_type=stype, t_comment=comment,
 					ignore_index=True))
 
-			#::TODO, revisit, re-engineer and possibly add a modifier option to add_condition
-			if len(id_dict['conditions']) > 0:
-				for cond in id_dict['conditions']:
-
-					if "IDENTIFIER" in cond:
-						cond = cond.replace(
-							"IDENTIFIER", "%s" % str(identifier))
-
-					self.add_condition(condition=str(cond), condition_group=id_dict[
-									   'condition_group'], default_boolean=id_dict['default_boolean'])
-
-			else:
-
-				self.add_condition(condition="all of ($%s*)" % identifier, condition_group=id_dict[
-								   'condition_group'], default_boolean=id_dict['default_boolean'])
-
-		if with_condition_groups:
-			self.add_condition(condition=self.get_condition_group(
-				name=id_dict['condition_group']))
-
 		if len(final_strings) > 0:
 
 			return ("\tstrings:\n\t\t%s\n" % ("\n\t\t".join(final_strings)))
@@ -421,33 +454,49 @@ class yara_tools(object):
 
 			return False
 
-	def process_conditions(self):
+	def process_conditions(self,condition_groups=False):
 		"""."""
-		#::rule_name = str(rule_name) deprecated
 
 		conditions = self.__conditions
-		def_conditions = self.__default_condition
-		authoritative_condition = self.__authoritative_condition
-		condition_joiners = self.__default_boolean
 
-		if authoritative_condition:
-			auth_type = type(authoritative_condition)
+		condition_format_str = "\tcondition:\n\t\t%s\n"
+
+		if self.__authoritative_condition:
+			auth_type = type(self.__authoritative_condition)
 			if auth_type == str:
-				return ("\tcondition:\n\t\t%s\n" % authoritative_condition)
+				return (condition_format_str % self.__authoritative_condition)
 			if auth_type == list:
-				return ("\tcondition:\n\t\t%s\n" % str(" " + condition_joiners + " ").join(authoritative_condition))
+				return (condition_format_str % str(" " + self.__default_boolean + " ").join(self.__authoritative_condition))
 
-		if not conditions:
-			return("\tcondition:\n\t\t%s them\n" % def_conditions)
+		if condition_groups and self.__condition_groups:
+			group_format_str="(%s)"
+			#::process groups with parents, initialize parents
+			for name,c in self.__condition_groups.items():
+				if c['parent']:
+					condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
+					if type(c['parent']) == list:
+						for p in c['parent']:
+							condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
+							self.add_condition(condition=condition_add,condition_group=c['parent'])
+					else:
+						condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
+						self.add_condition(condition=condition_add,condition_group=c['parent'])
 
-		if conditions:
-			if len(conditions) >= 1:
+			for name,c in self.__condition_groups.items():
+				#::if having no parent
+				for cond in c['conditions']:
+					if not c['parent']: 
+						condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
+						self.add_condition(condition=condition_add)
+
+		if self.__conditions:
+			if len(self.__conditions) >= 1:
 				tmp_conditions = []
-				for cond in conditions:
+				for cond in self.__conditions:
 					tmp_conditions.append(cond)
-				return ("\tcondition:\n\t\t%s\n" % str(" " + condition_joiners + " \n\t\t").join(tmp_conditions))
+				return (condition_format_str % str(" " + self.__default_boolean + " \n\t\t").join(tmp_conditions))
 		else:
-			return False
+			return(condition_format_str % self.__default_condition)
 
 	def process_meta(self):
 		"""."""
@@ -484,7 +533,7 @@ class yara_tools(object):
 
 		return("%s%s\nrule %s\n{\n%s\n%s\n%s\n}" % (tmp_imports, tmp_includes, rule_name, meta, strings, condition))
 
-	def build_rule(self, str_condition_groups=False):
+	def build_rule(self,condition_groups=False):
 		"""."""
 
 		tmp_imports = []
@@ -495,9 +544,8 @@ class yara_tools(object):
 		if len(self.__strings) == 0 and len(self.__conditions) == 0:
 			return False
 
-		tmp_strings = self.process_strings(
-			with_condition_groups=str_condition_groups)
-		tmp_condition = self.process_conditions()
+		tmp_strings = self.process_strings()
+		tmp_condition = self.process_conditions(condition_groups=condition_groups)
 		tmp_meta = self.process_meta()
 
 		if tmp_condition or tmp_strings:

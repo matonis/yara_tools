@@ -31,7 +31,7 @@ import yara
 rule = yara_tools.create_rule(name="hello_world")
 rule.add_meta(key="author", value="@matonis")
 rule.add_meta(key="purpose",
-			  value="Demonstrating a simple yara_tools rule and how to validate in yara-python")
+			  value="Simple 'Hello World'")
 rule.add_strings(strings="Hello World")
 rule.add_strings(strings=['Yello, World?', 'Yello, World!'],
 				 condition="any of ($IDENTIFIER*)",
