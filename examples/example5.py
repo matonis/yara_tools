@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 '''
-Example 4: Introducing Condition Groups
-Note: Creating a rule to hunt for documents
+Example 5: Advanced Condition Groups & Community Rules
+Note: How to create templates for complex rule types
 
 import "pe"
 import "math"
