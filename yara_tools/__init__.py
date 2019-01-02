@@ -17,6 +17,8 @@ class yara_tools(object):
 		self.__identifier_template = "IDENTIFIER"
 		self.__strings = False  # ::list obj
 		self.__conditions = False  # ::list obj
+		self.__proto_conditions = False # ::list obj
+		self.__proto_condition_groups = False # :: dict obj
 		self.__condition_groups = False  # ::dict obj
 		self.__imports = False  # ::set obj
 		self.__includes = False  # ::set obj
@@ -32,7 +34,7 @@ class yara_tools(object):
 								'condition_group': '',
 								'default_boolean': ''}
 
-		self.__legal_booleans = ('and', 'or')
+		self.__legal_booleans = ('and', 'or', 'not')
 
 	def raw_to_hex(self, raw_data):
 		"""."""
@@ -59,13 +61,17 @@ class yara_tools(object):
 
 		self.__rule_meta.append({str(key): str(value)})
 
-	def create_condition_group(self, name, default_boolean=False, parent_group=False):
+	def create_condition_group(self, name, default_boolean=False, parent_group=False,condition_modifier=False):
 		"""."""
-		def init_condition_group(name, default_boolean, parent=False):
+		def init_condition_group(name, default_boolean, parent=False,condition_modifier=condition_modifier):
+			
 			group_struct = {
 				'default_boolean': default_boolean,
 				 'conditions': list(),
-				 'parent': parent}
+				 'parent': parent,
+				 'modifier': condition_modifier
+				 }
+
 			self.__condition_groups[name] = deepcopy(group_struct)
 
 		if default_boolean:
@@ -76,21 +82,26 @@ class yara_tools(object):
 
 		if not self.__condition_groups:
 			self.__condition_groups = dict()
-			init_condition_group(name, default_boolean, parent_group)
+			init_condition_group(name, default_boolean, parent_group, condition_modifier)
 		else:
 			if not name in self.__condition_groups:
-				init_condition_group(name, default_boolean, parent_group)
+				init_condition_group(name, default_boolean, parent_group, condition_modifier)
 
 	def get_condition_group(self, name, new_boolean=False):
 		"""."""
-		if name in self.__condition_groups:
-			boolean = self.__condition_groups[name]['default_boolean']
-			if new_boolean:
-				if new_boolean in self.__legal_booleans:
-					boolean = new_boolean
-			return "(%s)" % (" %s " % boolean).join(self.__condition_groups[name]['conditions'])
-		else:
-			return False
+
+		self.__proto_conditions = []
+		self.__proto_condition_groups = self.__condition_groups
+
+		if name in self.__proto_condition_groups:
+			self.process_conditions(condition_groups=True,prototype=True)
+
+			tmp_conditions=self.proc_cond_str(self.__proto_condition_groups[name])
+
+			self.__proto_conditions=[]
+			self.__proto_condition_groups=dict()
+			
+			return tmp_conditions
 
 	def process_as_condition_group(self, condition, boolean):
 		"""."""
@@ -105,30 +116,47 @@ class yara_tools(object):
 		else:
 			return False
 
-	def add_condition(self, condition, condition_group=False, default_boolean=False, parent_group=False):
+	def add_condition(self, condition, condition_group=False, default_boolean=False, parent_group=False, condition_modifier=False,prototype=False):
 		"""."""
 		if not self.__conditions:
 			self.__conditions = list()
 
+		#::Prototype support for get_condition_group
+		global_condition_groups = None
+		global_conditions = None
+
+		if prototype:
+			global_condition_groups=self.__proto_condition_groups
+			global_conditions=self.__proto_conditions
+		else:
+			global_condition_groups=self.__condition_groups
+			global_conditions=self.__conditions
+
 		if condition_group:
+
 			self.create_condition_group(
-				name=condition_group, default_boolean=default_boolean, parent_group=parent_group)
+				name=condition_group, 
+				default_boolean=default_boolean, 
+				parent_group=parent_group, 
+				condition_modifier=condition_modifier
+				)
+
 			if type(condition) == list:
 				for c in condition:
-					if not c in self.__condition_groups[condition_group][
+					if not c in global_condition_groups[condition_group][
 							'conditions']: #::dev, unsure if we're breaking things
-						self.__condition_groups[condition_group][
+						global_condition_groups[condition_group][
 							'conditions'].append(c)
 			else:
 				if condition:
-					if not condition in self.__condition_groups[condition_group][
+					if not condition in global_condition_groups[condition_group][
 							'conditions']: #::dev, unsure if we're breaking things
-						self.__condition_groups[condition_group][
+						global_condition_groups[condition_group][
 							'conditions'].append(condition)
 		else:
 			if condition:
-				if not condition in self.__conditions: #::dev, unsure if we're breaking things
-					self.__conditions.append(str(condition))
+				if not condition in global_conditions: #::dev, unsure if we're breaking things
+					global_conditions.append(str(condition))
 
 	def add_authoritative_condition(self, condition):
 		"""."""
@@ -161,10 +189,10 @@ class yara_tools(object):
 
 	def add_strings(self, strings, modifiers=False, identifier=False,
 					condition=False, condition_group=False, default_boolean=False,
-					string_type=False, comment=False, parent_group=False):
+					string_type=False, comment=False, parent_group=False, condition_modifier=False):
 		"""."""
 
-		def process_string_condition(condition,identifier,condition_group,default_boolean,parent_group):
+		def process_string_condition(condition,identifier,condition_group,default_boolean,parent_group,condition_modifier):
 			
 			if type(condition) == list:
 				for i in range(len(condition)):
@@ -175,7 +203,8 @@ class yara_tools(object):
 			self.add_condition(condition=condition,
 								condition_group=condition_group,
 								default_boolean=default_boolean,
-								parent_group=parent_group)
+								parent_group=parent_group,
+								condition_modifier=condition_modifier)
 
 		if not self.__strings:
 			self.__strings = list()
@@ -219,14 +248,16 @@ class yara_tools(object):
 									identifier=identifier,
 									condition_group=condition_group,
 									default_boolean=default_boolean,
-									parent_group=parent_group)
+									parent_group=parent_group,
+									condition_modifier=condition_modifier)
 		else:
 			string_template['condition'] = "%s ($%s*)" % (self.__default_str_condition,identifier)
 			process_string_condition(condition=string_template['condition'],
 									identifier=identifier,
 									condition_group=condition_group,
 									default_boolean=default_boolean,
-									parent_group=parent_group)
+									parent_group=parent_group,
+									condition_modifier=condition_modifier)
 
 		if modifiers:
 			string_template['modifiers'] = modifiers
@@ -245,7 +276,7 @@ class yara_tools(object):
 
 	def add_regex(self, regex, modifiers=False, identifier=False,
 				  condition=False, condition_group=False, default_boolean=False,
-				  comment=False, parent_group=False):
+				  comment=False, parent_group=False,condition_modifier=False):
 		"""."""
 		regex_template = "/%s/"
 
@@ -255,18 +286,21 @@ class yara_tools(object):
 								 identifier=identifier, condition=condition,
 								 string_type='regex', comment=comment,
 								 condition_group=condition_group, default_boolean=default_boolean,
-								 parent_group=parent_group)
+								 parent_group=parent_group,
+								 condition_modifier=condition_modifier)
 		else:
 			self.add_strings(strings=regex_template % regex, modifiers=modifiers,
 							 identifier=identifier, condition=condition,
 							 string_type='regex', comment=comment,
 							 condition_group=condition_group, default_boolean=default_boolean,
-							 parent_group=parent_group)
+							 parent_group=parent_group,
+							 condition_modifier=condition_modifier)
 
 	def add_binary_strings(self, data, size_limit=False, modifiers=False,
 						   identifier=False, condition=False,
 						   condition_group=False, default_boolean=False, comment=False,
-						   parent_group=False):
+						   parent_group=False,
+						   condition_modifier=False):
 		"""."""
 		binary_template = "{%s}"
 
@@ -288,12 +322,13 @@ class yara_tools(object):
 						 identifier=identifier, condition=condition,
 						 string_type='binary', comment=comment,
 						 condition_group=condition_group, default_boolean=default_boolean,
-						 parent_group=parent_group)
+						 parent_group=parent_group,
+						 condition_modifier=condition_modifier)
 
 	def add_binary_as_string(self, data, modifiers=False,
 							 identifier=False, condition=False,
 							 condition_group=False, default_boolean=False, comment=False,
-							 parent_group=False):
+							 parent_group=False,condition_modifier=False):
 		"""."""
 		binary_template = "{%s}"
 
@@ -303,14 +338,16 @@ class yara_tools(object):
 								 identifier=identifier, condition=condition,
 								 string_type='binary_str', comment=comment,
 								 condition_group=condition_group, default_boolean=default_boolean,
-								 parent_group=parent_group)
+								 parent_group=parent_group,
+								 condition_modifier=condition_modifier)
 
 		else:
 			self.add_strings(strings=binary_template % data, modifiers=modifiers,
 							 identifier=identifier, condition=condition,
 							 string_type='binary_str', comment=comment,
 							 condition_group=condition_group, default_boolean=default_boolean,
-							 parent_group=parent_group)
+							 parent_group=parent_group,
+							 condition_modifier=condition_modifier)
 
 	def process_strings(self, with_condition_groups=False):
 		"""."""
@@ -453,41 +490,61 @@ class yara_tools(object):
 		else:
 
 			return False
+		
+	def proc_cond_str(self,cond_struct):
+		
+		if cond_struct['modifier']:
+			group_format_str="%s (%s)"
+			return group_format_str % (cond_struct['modifier'],((" %s " % cond_struct['default_boolean']).join(cond_struct['conditions'])))
+		else:
+			group_format_str="(%s)"
+			return group_format_str % ((" %s " % cond_struct['default_boolean']).join(cond_struct['conditions']))
 
-	def process_conditions(self,condition_groups=False):
+	def process_conditions(self,condition_groups=False,prototype=False):
 		"""."""
 
-		conditions = self.__conditions
+
+
+		#::Added to prototype condition groups. Hacky.
+		int_condition_groups = None
+		int_conditions = None
+
+		if prototype:
+			int_condition_groups=self.__proto_condition_groups
+			int_conditions=self.__proto_conditions
+		else:
+			int_condition_groups=self.__condition_groups
+			int_conditions=self.__conditions
+
 
 		condition_format_str = "\tcondition:\n\t\t%s\n"
 
-		if self.__authoritative_condition:
+		if self.__authoritative_condition and not prototype:
 			auth_type = type(self.__authoritative_condition)
 			if auth_type == str:
 				return (condition_format_str % self.__authoritative_condition)
 			if auth_type == list:
 				return (condition_format_str % str(" " + self.__default_boolean + " ").join(self.__authoritative_condition))
 
-		if condition_groups and self.__condition_groups:
-			group_format_str="(%s)"
+		if condition_groups and int_condition_groups:
 			#::process groups with parents, initialize parents
-			for name,c in self.__condition_groups.items():
+			for name,c in int_condition_groups.items():
+				group_format_str="(%s)"
 				if c['parent']:
-					condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
 					if type(c['parent']) == list:
 						for p in c['parent']:
-							condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
-							self.add_condition(condition=condition_add,condition_group=c['parent'])
+							self.add_condition(condition=self.proc_cond_str(c),condition_group=c['parent'],prototype=prototype)
 					else:
-						condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
-						self.add_condition(condition=condition_add,condition_group=c['parent'])
+						self.add_condition(condition=self.proc_cond_str(c),condition_group=c['parent'],prototype=prototype)
 
-			for name,c in self.__condition_groups.items():
+			for name,c in int_condition_groups.items():
 				#::if having no parent
 				for cond in c['conditions']:
 					if not c['parent']: 
-						condition_add=group_format_str % ((" %s " % c['default_boolean']).join(c['conditions']))
-						self.add_condition(condition=condition_add)
+						self.add_condition(condition=self.proc_cond_str(c),prototype=prototype)
+
+		if prototype:
+			return
 
 		if self.__conditions:
 			if len(self.__conditions) >= 1:

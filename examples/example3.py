@@ -33,7 +33,6 @@ import os,sys
 
 #::yara_tools
 rule=yara_tools.create_rule(name="simple_shamoon")
-
 rule.add_import(import_name="pe")
 rule.set_default_boolean(value='or')
 
