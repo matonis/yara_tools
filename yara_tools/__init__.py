@@ -3,13 +3,13 @@
 
 import binascii
 from copy import deepcopy
-
+import collections
 
 class yara_tools(object):
 
 	"""."""
 
-	def __init__(self,name,default_identifier=False,tags=False,default_condition=False,default_boolean=False,identifier_template=False,global_rule=False,private_rule=False,default_str_condition=False,**kwargs):
+	def __init__(self,name,default_identifier=False,tags=False,default_condition=False,default_boolean=False,identifier_template=False,global_rule=False,private_rule=False,default_str_condition=False,imports=False,includes=False,**kwargs):
 		"""."""
 		self.__name = str(name)
 		self.__global = False
@@ -62,23 +62,37 @@ class yara_tools(object):
 		if default_str_condition:
 			self.set_default_str_condition(value=default_str_condition)
 
+		if imports:
+			self.add_import(name=imports)
+
+		if includes:
+			self.add_include(value=includes)
+
 	def raw_to_hex(self, raw_data):
 		"""."""
 		return str(binascii.hexlify(raw_data))
 
-	def add_import(self, import_name):
+	def add_import(self, name):
 		"""."""
 		if not self.__imports:
 			self.__imports = set()
 
-		self.__imports.add(str(import_name))
+		if type(name) == list:
+			for i in name:
+				self.__imports.add(i)
+		else:
+			self.__imports.add(str(name))
 
-	def add_include(self, include_name):
+	def add_include(self, value):
 		"""."""
 		if not self.__includes:
 			self.__includes = set()
-
-		self.__includes.add(str(include_name))
+		
+		if type(value) == list:
+			for i in value:
+				self.__includes.add(i)
+		else:
+			self.__includes.add(str(value))
 
 	def add_meta(self, key, value):
 		"""."""
@@ -87,15 +101,16 @@ class yara_tools(object):
 
 		self.__rule_meta.append({str(key): str(value)})
 
-	def create_condition_group(self, name, default_boolean=False, parent_group=False,condition_modifier=False):
+	def create_condition_group(self, name, default_boolean=False, parent_group=False,condition_modifier=False,virtual=False):
 		"""."""
-		def init_condition_group(name, default_boolean, parent=False,condition_modifier=condition_modifier):
+		def init_condition_group(name, default_boolean, parent=False,condition_modifier=condition_modifier,virtual=False):
 			
 			group_struct = {
 				'default_boolean': default_boolean,
 				 'conditions': list(),
 				 'parent': parent,
-				 'modifier': condition_modifier
+				 'modifier': condition_modifier,
+				 'virtual' : virtual
 				 }
 
 			self.__condition_groups[name] = deepcopy(group_struct)
@@ -107,21 +122,21 @@ class yara_tools(object):
 			default_boolean = 'and'
 
 		if not self.__condition_groups:
-			self.__condition_groups = dict()
+			self.__condition_groups = collections.OrderedDict()
 
 		if type(name) == list:
 			for n in name:
 				if not n in self.__condition_groups:
-					init_condition_group(n, default_boolean, parent_group, condition_modifier)
+					init_condition_group(n, default_boolean, parent_group, condition_modifier, virtual)
 		else:
 			if not name in self.__condition_groups:
-				init_condition_group(name, default_boolean, parent_group, condition_modifier)
+				init_condition_group(name, default_boolean, parent_group, condition_modifier, virtual)
 
 	def get_condition_group(self, name, new_boolean=False):
 		"""."""
 
 		self.__proto_conditions = []
-		self.__proto_condition_groups = deepcopy(self.__condition_groups)
+		self.__proto_condition_groups = self.__condition_groups
 
 		if name in self.__proto_condition_groups:
 			self.process_conditions(condition_groups=True,prototype=True)
@@ -413,7 +428,7 @@ class yara_tools(object):
 							 parent_group=parent_group,
 							 condition_modifier=condition_modifier)
 
-	def process_strings(self, with_condition_groups=False):
+	def process_strings(self):
 		"""."""
 		def process_collections(str_obj):
 			identifier_collections[identifier]['strings'].append(str_obj)
@@ -452,6 +467,9 @@ class yara_tools(object):
 		identifier_collections = dict()
 		final_strings = []
 		# rule_name = str(rule_name) #::deprecated
+
+		if not self.__strings:
+			return ""
 
 		string_structs = self.__strings
 
@@ -581,6 +599,7 @@ class yara_tools(object):
 
 		condition_format_str = "\tcondition:\n\t\t%s\n"
 
+		#::Skip return from authoritity condition if we are prototyping
 		if self.__authoritative_condition and not prototype:
 			auth_type = type(self.__authoritative_condition)
 			if auth_type == str:
@@ -600,10 +619,11 @@ class yara_tools(object):
 						self.add_condition(condition=self.proc_cond_str(c),condition_group=c['parent'],prototype=prototype)
 
 			for name,c in int_condition_groups.items():
-				#::if having no parent
+				#::if having no parent, don't add condition if ignore == True if we are not prototyping
 				for cond in c['conditions']:
-					if not c['parent']: 
-						self.add_condition(condition=self.proc_cond_str(c),prototype=prototype)
+					if not c['parent']:
+						if not c['virtual'] and not prototype:
+							self.add_condition(condition=self.proc_cond_str(c),prototype=prototype)
 
 		if prototype:
 			return

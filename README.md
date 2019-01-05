@@ -78,14 +78,14 @@ rule=yara_tools.create_rule(name="my_rule")
 **Imports**
 
 ```python
-rule.add_import(import_name="pe")
-rule.add_import(import_name="cuckoo")
-rule.add_import(import_name="my_custom_package")
+rule.add_import(name="pe")
+rule.add_import(name="cuckoo")
+rule.add_import(name="my_custom_package")
 ```
 **Includes**
 
 ```python
-rule.add_include(include_name="other_rule.yar")
+rule.add_include(include="other_rule.yar")
 ```
 
 **Meta**
