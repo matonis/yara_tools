@@ -9,7 +9,7 @@ class yara_tools(object):
 
 	"""."""
 
-	def __init__(self,name,default_identifier=False,tags=False,default_condition=False,default_boolean=False,identifier_template=False,global_rule=False,private_rule=False,**kwargs):
+	def __init__(self,name,default_identifier=False,tags=False,default_condition=False,default_boolean=False,identifier_template=False,global_rule=False,private_rule=False,default_str_condition=False,**kwargs):
 		"""."""
 		self.__name = str(name)
 		self.__global = False
@@ -17,7 +17,7 @@ class yara_tools(object):
 		self.__default_identifier = False
 		self.__identifier_template = "IDENTIFIER"
 		self.__strings = False  # ::list obj
-		self.__tags = False
+		self.__tags = False #::list obj
 		self.__conditions = False  # ::list obj
 		self.__proto_conditions = False # ::list obj
 		self.__proto_condition_groups = False # :: dict obj
@@ -51,13 +51,16 @@ class yara_tools(object):
 			self.add_tags(tags=tags)
 
 		if default_condition:
-			self.set_default_condition(value=default_condition)
+			self.set_default_condition(condition=default_condition)
 
 		if default_boolean:
 			self.set_default_boolean(value=default_boolean)
 
 		if identifier_template:
 			self.set_identifier_template(value=identifier_template)
+
+		if default_str_condition:
+			self.set_default_str_condition(value=default_str_condition)
 
 	def raw_to_hex(self, raw_data):
 		"""."""
