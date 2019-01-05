@@ -1,8 +1,7 @@
-"""A library to interact with YARA rules.
+"""A library to create YARA rules.
 """
 
 import binascii
-import random
 from copy import deepcopy
 
 
@@ -10,12 +9,15 @@ class yara_tools(object):
 
 	"""."""
 
-	def __init__(self, rule_name):
+	def __init__(self,name,default_identifier=False,tags=False,default_condition=False,default_boolean=False,identifier_template=False,global_rule=False,private_rule=False,**kwargs):
 		"""."""
-		self.__name = str(rule_name)
+		self.__name = str(name)
+		self.__global = False
+		self.__private = False
 		self.__default_identifier = False
 		self.__identifier_template = "IDENTIFIER"
 		self.__strings = False  # ::list obj
+		self.__tags = False
 		self.__conditions = False  # ::list obj
 		self.__proto_conditions = False # ::list obj
 		self.__proto_condition_groups = False # :: dict obj
@@ -35,6 +37,27 @@ class yara_tools(object):
 								'default_boolean': ''}
 
 		self.__legal_booleans = ('and', 'or', 'not')
+
+		if global_rule:
+			self.__global=True
+
+		if private_rule:
+			self.__private=True
+
+		if default_identifier:
+			self.set_default_identifier(value=default_identifier)
+
+		if tags:
+			self.add_tags(tags=tags)
+
+		if default_condition:
+			self.set_default_condition(value=default_condition)
+
+		if default_boolean:
+			self.set_default_boolean(value=default_boolean)
+
+		if identifier_template:
+			self.set_identifier_template(value=identifier_template)
 
 	def raw_to_hex(self, raw_data):
 		"""."""
@@ -82,7 +105,11 @@ class yara_tools(object):
 
 		if not self.__condition_groups:
 			self.__condition_groups = dict()
-			init_condition_group(name, default_boolean, parent_group, condition_modifier)
+
+		if type(name) == list:
+			for n in name:
+				if not n in self.__condition_groups:
+					init_condition_group(n, default_boolean, parent_group, condition_modifier)
 		else:
 			if not name in self.__condition_groups:
 				init_condition_group(name, default_boolean, parent_group, condition_modifier)
@@ -91,7 +118,7 @@ class yara_tools(object):
 		"""."""
 
 		self.__proto_conditions = []
-		self.__proto_condition_groups = self.__condition_groups
+		self.__proto_condition_groups = deepcopy(self.__condition_groups)
 
 		if name in self.__proto_condition_groups:
 			self.process_conditions(condition_groups=True,prototype=True)
@@ -118,6 +145,33 @@ class yara_tools(object):
 
 	def add_condition(self, condition, condition_group=False, default_boolean=False, parent_group=False, condition_modifier=False,prototype=False):
 		"""."""
+
+		def add_condition_to_group(condition, group):
+
+			self.create_condition_group(
+			name=group, 
+			default_boolean=default_boolean, 
+			parent_group=parent_group, 
+			condition_modifier=condition_modifier
+			)
+
+			if type(condition) == list:
+				for c in condition:
+					if not c in global_condition_groups[group][
+							'conditions']: #::dev, unsure if we're breaking things
+						global_condition_groups[group][
+							'conditions'].append(c)
+			else:
+				if condition:
+					if not condition in global_condition_groups[group][
+							'conditions']: #::dev, unsure if we're breaking things
+						global_condition_groups[group][
+							'conditions'].append(condition)
+
+		def add_global_condition(condition):
+			if not condition in global_conditions:
+				global_conditions.append(str(condition))
+
 		if not self.__conditions:
 			self.__conditions = list()
 
@@ -133,47 +187,51 @@ class yara_tools(object):
 			global_conditions=self.__conditions
 
 		if condition_group:
-
-			self.create_condition_group(
-				name=condition_group, 
-				default_boolean=default_boolean, 
-				parent_group=parent_group, 
-				condition_modifier=condition_modifier
-				)
-
-			if type(condition) == list:
-				for c in condition:
-					if not c in global_condition_groups[condition_group][
-							'conditions']: #::dev, unsure if we're breaking things
-						global_condition_groups[condition_group][
-							'conditions'].append(c)
+			if type(condition_group) == list:
+				for cg in condition_group:
+					add_condition_to_group(condition=condition,group=cg)
 			else:
-				if condition:
-					if not condition in global_condition_groups[condition_group][
-							'conditions']: #::dev, unsure if we're breaking things
-						global_condition_groups[condition_group][
-							'conditions'].append(condition)
+				add_condition_to_group(condition=condition,group=condition_group)
 		else:
 			if condition:
-				if not condition in global_conditions: #::dev, unsure if we're breaking things
-					global_conditions.append(str(condition))
+				if type(condition) == list:
+					for c in condition:
+						add_global_condition(c)
+				else:
+					add_global_condition(condition)
 
 	def add_authoritative_condition(self, condition):
 		"""."""
 		self.__authoritative_condition = str(condition)
+
+	def add_tags(self,tags):
+		"""."""
+		if not self.__tags:
+			self.__tags=[]
+
+		if type(tags) == list:
+			for tag in tags:
+				self.__tags.append(tag)
+		elif type(tags) == str:
+			self.__tags.append(tags)
 
 	def set_default_boolean(self, value):
 		"""."""
 		if value in self.__legal_booleans:
 			self.__default_boolean = (str(value))
 
-	def set_default_condition(self, value):
+	def set_default_condition(self, condition):
 
-		self.__default_condition = str(value)
+		self.__default_condition = str(condition)
 
 	def set_default_str_condition(self,value):
 
 		self.__default_str_condition = str(value)
+
+	def set_identifier_template(self,value):
+
+		self.__identifier_template=str(value)
+		self.__reserved_identifiers[0]=str(value)
 
 	def set_default_identifier(self, value):
 		"""."""
@@ -212,8 +270,11 @@ class yara_tools(object):
 		string_template = deepcopy(self.__string_struct)
 		reserved_identifiers = deepcopy(self.__reserved_identifiers)
 
+		if self.__default_identifier:
+			identifier=self.__default_identifier
+
 		if not identifier and not self.__default_identifier:
-			#::keep'n it traditional yara style
+			#::keep'n it traditional yara style w/ chr(115), honey
 			#:: If you're troubleshooting and arrived here, choose an identifier of your own. This won't scale.
 			for char in [115,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,97,116,117,118,119,120,121,122]:
 				char=chr(char)
@@ -503,8 +564,6 @@ class yara_tools(object):
 	def process_conditions(self,condition_groups=False,prototype=False):
 		"""."""
 
-
-
 		#::Added to prototype condition groups. Hacky.
 		int_condition_groups = None
 		int_conditions = None
@@ -567,7 +626,31 @@ class yara_tools(object):
 
 		return "\tmeta:\n\t\t%s\n" % "\n\t\t".join(tmp_meta)
 
-	def ret_complete_rule(self, rule_name, condition, meta=False,
+	def process_tags(self):
+
+		if self.__tags:
+			return " : %s" % " ".join(self.__tags)
+		else:
+			return ""
+
+	def process_scope(self):
+
+		scope=[]
+
+		if self.__private:
+			scope.append('private')
+
+		if self.__global:
+
+			scope.append('global')
+
+		if len(scope) > 0:
+			return "%s " % " ".join(scope)
+		else:
+			return ""
+
+
+	def ret_complete_rule(self, rule_name, condition, tags, scope, meta=False,
 						  strings=False, imports=False, includes=False):
 		"""."""
 		final_rule = ""
@@ -588,7 +671,7 @@ class yara_tools(object):
 		if not strings:
 			strings = ""
 
-		return("%s%s\nrule %s\n{\n%s\n%s\n%s\n}" % (tmp_imports, tmp_includes, rule_name, meta, strings, condition))
+		return("%s%s\n%srule %s%s\n{\n%s\n%s\n%s\n}" % (tmp_imports, tmp_includes, scope, rule_name, tags, meta, strings, condition))
 
 	def build_rule(self,condition_groups=False):
 		"""."""
@@ -598,17 +681,24 @@ class yara_tools(object):
 		tmp_strings = False
 		tmp_condition = False
 
-		if len(self.__strings) == 0 and len(self.__conditions) == 0:
+		tmp_condition = self.process_conditions(condition_groups=condition_groups)
+
+		if self.__conditions:
+			if len(self.__conditions) == 0:
+				return False
+		else:
 			return False
 
 		tmp_strings = self.process_strings()
-		tmp_condition = self.process_conditions(condition_groups=condition_groups)
 		tmp_meta = self.process_meta()
+		tmp_tags = self.process_tags()
+		tmp_scope = self.process_scope()
 
 		if tmp_condition or tmp_strings:
 			kwargs = {'rule_name': self.__name, 'condition': tmp_condition,
 					  'meta': tmp_meta, 'strings': tmp_strings,
-					  'imports': self.__imports, 'includes': self.__includes}
+					  'imports': self.__imports, 'includes': self.__includes,
+					  'tags': tmp_tags, 'scope' : tmp_scope}
 			rule = self.ret_complete_rule(**kwargs)
 			return rule
 
@@ -616,9 +706,7 @@ class yara_tools(object):
 			return False
 
 
-def create_rule(name):
+def create_rule(**kwargs):
 	"""."""
-	if name:
-		return yara_tools(rule_name=str(name))
-	else:
-		return False
+	return yara_tools(**kwargs)
+
