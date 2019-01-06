@@ -162,6 +162,18 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
 rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 
 ```
+
+**For Loops**
+
+*yara_tools* contains a built-in method to create for loops. The following method returns a string which can later be used in conditions and condition groups.
+
+```python
+for_loop=rule.create_for_loop(expression="any",
+							identifier="i",
+							indexes="0..pe.number_of_resources - 1",
+							condition=rule.get_condition_group(name='master_for'))
+```
+
 **Conditions**
 
 Conditions created via *add_condition* are order-based when compiled. It is recommended to apply file-based constraints/conditions prior to strings.
