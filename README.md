@@ -246,6 +246,7 @@ In this example, a condition group is created and is related to parent groups "p
 Upon compile, conditions and expressions contained within "bc1" will be nested within condition groups "pc1" and "pc2."
 
 _**Virtual Condition Groups**_
+
 Virtual Condition Groups are a memory-only concept. It allows you to create a complex condition that is never committed to a rule. 
 
 There may be cases, conditions, or features that do not yet exist in YARA or yara_tools where you still may be able to apply a condition group construct. An easy example of this is the *for loop* in YARA. To achieve a *for loop*, you'll need to build a format string. 
