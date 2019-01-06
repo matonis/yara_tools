@@ -140,8 +140,7 @@ for_loop_format_str="""
 				%s
 			)
 """
-#::Generate a completed nested rule via get_condition_group using the parent 'master_for' condition group
-#::Since 'master_for' was declared as 'virtual', it exists only in memory.
+#::Create our for loop, use get_condition_group to retrieve our virtual condition group 'master_for'
 for_loop=rule.create_for_loop(expression="any",
 							identifier="i",
 							indexes="0..pe.number_of_resources - 1",
