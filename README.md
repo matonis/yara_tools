@@ -57,7 +57,7 @@ except Exception as e:
 	print my_rule
 ```
 **Visual Tutorial**
-![Visual Guide](https://github.com/matonis/yara_tools/yara_tools_visual_guide.png)
+![Visual Guide](https://github.com/matonis/yara_tools/blob/alpha_release/yara_tools_visual_guide.png)
 
 **Getting Started**
 
