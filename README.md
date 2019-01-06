@@ -164,6 +164,7 @@ rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 ```
 
 **For Loops**
+
 *yara_tools* contains a built-in method to create for loops. The following method returns a string which can later be used in conditions and condition groups.
 
 ```python
