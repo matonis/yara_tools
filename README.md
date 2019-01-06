@@ -3,7 +3,7 @@ yara_tools
 
 Python bindings to author YARA rules using natural Python conventions instead of format strings. Additional features to automate and appropriately describe YARA rules programatically.  If YARA is the *"pattern matching swiss [Army] knife"* of the binary world, then *yara_tools* is the **butter knife** of signature generation! 
 
-*"But hold on, @matonis... isn't a butter knife just a utensil used to cut a sliver of cold butter and then aggressively wipe it on a crusty piece of bread?"* 
+*"But hold on, @matonis... isn't a butter knife only a utensil used to cut a sliver of cold butter which is then aggressively wiped on a crusty piece of bread?"* 
 
 **WRONG!** 
 Did you know that a household butter knife can be used as:
@@ -13,12 +13,7 @@ Did you know that a household butter knife can be used as:
 * A repair tool for a screen door
 * A knife?
 
-**yara_tools**, as its name implies, is a tool. This format string (the one many of you use in your scripts)  is not a tool:
-
-```python
-	print "rule %s\n{\n\tstrings:\n\t%s\n\tcondition:\n\t%s\n\n}" % (name,strings,condition)
-```
-There has to be a better way.
+Like a butter knife, yara_tools has multiple features to help streamline signature generation. It can't do everything, but it can do _most_ things.
 
 
 ### Be Advised
@@ -47,7 +42,7 @@ import yara_tools
 import yara
 
 rule=yara_tools.create_rule(name="x86_pe")
-rule.add_import(import_name="pe")
+rule.add_import(name="pe")
 rule.add_meta(key="author",value="matonis")
 rule.add_condition(condition="uint16(0x00) == 0x5a4d")
 rule.set_default_boolean(value="and")
@@ -74,6 +69,19 @@ A parent "rule object" is created using the following method. All aspects of a r
 ```python
 rule=yara_tools.create_rule(name="my_rule")
 ```
+
+*create_rule()* takes a number of parameters which assist in aspects of a rule.
+* _default_boolean_ - Default global condition operator
+* _default_condition_ - Default condition if no condition present. Default "all of them"
+* _default_identifier_ - Default string identifier.
+* _default_str_condition_ - Default condition prefix with strings. Default "all of"
+* _global_rule_ - Boolean if global rule
+* _identifier_template_ - String reference for condition templates in strings. Default "IDENTIFIER"
+* _imports_ - String or List to import reference.
+* _includes_ - String or List to include reference.
+* _private_rule_ -  Boolean if private rule
+* _tags_ - String or List to include tags.
+
 
 **Imports**
 
@@ -144,6 +152,13 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
 						comment="Applying size limits",size_limit=5)
 ```
 
+**Wildcard Binary Strings**
+*yara_tools* also lets you add binary strings which have been wildcarded, most applicable to analyzed assembly. This is possible using the *add_binary_as_string* method.
+
+```python
+rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
+
+```
 **Conditions**
 
 Conditions created via *add_condition* are order-based when compiled. It is recommended to apply file-based constraints/conditions prior to strings.
@@ -166,6 +181,85 @@ A default condition exists within *yara_tools*, it is 'all of them.' Programmati
 rule.add_authoritative_condition(condition="any of them")
 ```
 
+**Conditions And Strings**
+
+All functions adding strings to a YARA rule accept the following parameters which enable developers to add conditions to the following methods:
+* *add_strings*
+* *add_binary_strings*
+* *add_regex*
+* *add_binary_as_string*
+
+```python
+add_strings(...condition="my condition")
+```
+
+**Complex Conditions & Condition Groups**
+
+*yara_tools* introduces a concept known as *Condition Groups.*
+
+Condition Groups are containers for conditions. 
+* A condition group may have one or many expressions within them. 
+* A condition group has a single configurable boolean assigned to all expressions within it. 
+* A condition group can be negated/inverted (not modifier)
+* An expression can be used within many condition groups. 
+* Condition groups can be related to one another and nested.
+
+A condition group is a construct that only exists in memory. A condition group is not committed to a rule until compile time (build_rule()) and will only appear as a condition if build rule is invoked with the *condition_groups* parameter.
+
+```python
+rule.build_rule(condition_groups=True)
+```
+
+_*Simple Condition Groups*_
+Condition groups are created via _create_condition_group()_ method.
+
+```python
+rule.create_condition_group(name="my_condition_group")
+```
+
+The following parameters can be provided to *create_condition_group* to modify it:
+* *condition_modifier*  - A boolean value, most often used to negate a group using 'not'
+* *default_boolean* - A condition group's expressions can only contain a single boolean.
+* *parent_group* - A reference to another condition group used in building complex relationships. Can be a list() or str()
+* *virtual* - Boolean. A virtual condition group is never committed to a rule. It is used to prototype condition groups, commonly used to retrieve compiled condition_group strings.
+
+_*Inline Assignment of Strings & Conditions To Condition Groups*_
+All strings and conditions can be assigned to one or many condition groups via the *condition_group* parameter to each respective function.
+
+```python
+rule.create_condition_group(name="m1",default_boolean='or') 
+rule.add_strings(strings="MyStringToFind",condition_group='m1')
+rule.add_condition('uint16(0x00) == 0x5a4d',condition_group='m1')
+```
+_*Complex Condition Groups: Nesting Condition Groups*_
+
+Conditions groups can have a one to many relationship with other condition groups and nested within each other. Nested condition groups are created by referencing a related condition group known as its "parents" by using the parameter *parent_group*
+
+```python
+rule.create_condition_group(name="bc1",parent_group=["pc1",'pc2'])
+```
+In this example, a condition group is created and is related to parent groups "pc1" and "pc2." This will only work successfully if these parent groups have been created prior to this call. 
+
+Upon compile, conditions and expressions contained within "bc1" will be nested within condition groups "pc1" and "pc2."
+
+_*Virtual Condition Groups*_
+Virtual Condition Groups are a memory-only concept. It allows you to create a complex condition that is never committed to a rule. 
+
+There may be cases, conditions, or features that do not yet exist in YARA or yara_tools where you still may be able to apply a condition group construct. An easy example of this is the *for loop* in YARA. To achieve a *for loop*, you'll need to build a format string. 
+* See Example 5
+
+A virtual condition group is created using the parameter *virtual*
+
+```python
+rule.create_condition_group(name="master_for",virtual=True)
+```
+
+All conditions nested under a virtual condition group will reside in memory, unless they also exist in a non-virtual condition group. To access a compiled virtual condition_group strings, the follow method will invoke aspects of build_rule() but in *prototype* mode. The rule's global conditions will not be compiled or modified.
+
+```python
+rule.get_condition_group(name='master_for')
+```
+
 **Building A Rule**
 
 Rules are built in *yara_tools* only if strings or a condition is present. A string-based rule is returned via:
@@ -174,8 +268,8 @@ Rules are built in *yara_tools* only if strings or a condition is present. A str
 rule.build_rule()
 ```
 
-## Fun Facts
-Here are some fun facts about yara_tools.
- * As of this writing, yara_tools is almost four years old! It was first created as a sub-project to version 2 of github.com/matonis/ripPE. ripPEv2 is an entire rewrite which was never released... and probably never will be! Wanna parse authenticode certs and automatically create YARA rules on them and so much more? Bribe me.
- * yara_tools was once referred to as *"too meta"* by one of the key developers behind YARA!
- * The author of yara_tools has no idea why they even wasted their time on this project. *See method "ret_complete_rule"*
+If condition groups are used in a rule, conditions groups will not appear unless *build_rule()* is executed with *condition_groups* parameter.
+
+```python
+rule.build_rule(condition_groups=True)
+```

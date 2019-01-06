@@ -157,18 +157,12 @@ class yara_tools(object):
 
 		#::This function creates a concept of 'prototyping' of the group
 
-		import pprint
 		self.__proto_conditions = []
 		self.__proto_condition_groups = self.__condition_groups
-
-		print self.__condition_groups
-		print self.__proto_condition_groups
 
 		if name in self.__proto_condition_groups:
 
 			self.process_conditions(condition_groups=True, prototype=True)
-
-			pprint.pprint(dict(self.__proto_condition_groups).items())
 
 			tmp_conditions = self.proc_cond_str(
 				self.__proto_condition_groups[name])
@@ -788,7 +782,7 @@ class yara_tools(object):
 
 		if self.__conditions:
 			if len(self.__conditions) == 0:
-				return False
+				raise Exception("No Conditions In Rule")
 		else:
 			raise Exception("No Conditions In Rule")
 
