@@ -153,6 +153,7 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
 ```
 
 **Wildcard Binary Strings**
+
 *yara_tools* also lets you add binary strings which have been wildcarded, most applicable to analyzed assembly. This is possible using the *add_binary_as_string* method.
 
 ```python
