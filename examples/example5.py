@@ -131,15 +131,6 @@ rule.add_condition(condition="$mz in (pe.resources[i].offset..pe.resources[i].of
 							condition_group="not_mz"
 							)
 
-#pprint.pprint(rule._yara_tools__condition_groups)
-
-#::Create a for loop format string, format string parameter will be out virtual group, "master_for"
-for_loop_format_str="""
-			for any i in (0..pe.number_of_resources - 1):
-			( 	
-				%s
-			)
-"""
 #::Create our for loop, use get_condition_group to retrieve our virtual condition group 'master_for'
 for_loop=rule.create_for_loop(expression="any",
 							identifier="i",
