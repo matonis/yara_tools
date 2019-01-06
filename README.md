@@ -59,7 +59,7 @@ except Exception as e:
 ### Visual Guide
 ![Visual Guide](https://github.com/matonis/yara_tools/blob/alpha_release/yara_tools_visual_guide.png)
 
-**Getting Started**
+### Getting Started
 
 Begin by importing yara_tools:
 ```python
