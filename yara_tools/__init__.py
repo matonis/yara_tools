@@ -102,6 +102,17 @@ class yara_tools(object):
 
 		self.__rule_meta.append({str(key): str(value)})
 
+	def create_for_loop(self,expression=False,identifier=False,indexes=False,condition=False):
+		"""."""
+		for_loop_format_str="""
+		for %s %s in (%s):
+		( 	
+			%s
+		)"""
+
+		return for_loop_format_str % (expression,identifier,indexes,condition)
+
+
 	def create_condition_group(self, name, default_boolean=False, parent_group=False, condition_modifier=False, virtual=False):
 		"""."""
 
