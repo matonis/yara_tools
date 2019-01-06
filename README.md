@@ -170,13 +170,13 @@ rule.add_condition(condition="uint16(0x00) == 0x5a4d")
 ```
 
 
-Programatic logic may dictate a default boolean condition for a rule if multiple string identifiers are utilized. These can be controlled via the following function:
+*yara_tools* has a concept of a "global condition group." Any condition you add will be thrown into the global condition group. The default boolean can be updated for this group using the *set_default_boolean* method. Its default value is 'and.' Every expression added to a condition via *add_condition* will be joined using this master operator.
 
 ```python
 rule.set_default_boolean(value="or") #::Default value is 'and'
 ```
 
-A default condition exists within *yara_tools*, it is 'all of them.' Programmatic logic may trump all of your work. In this case, an authoritative condition can be set which trumps all prior procedures:
+You can also set an authoritative condition. No matter what conditions/expressions have been added via *add_condition*, only the condition used in *add_authoritative_condition* will appear in your rule.
 
 ```python
 rule.add_authoritative_condition(condition="any of them")
