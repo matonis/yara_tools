@@ -169,9 +169,9 @@ rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 
 ```python
 for_loop=rule.create_for_loop(expression="any",
-							identifier="i",
-							indexes="0..pe.number_of_resources - 1",
-							condition=rule.get_condition_group(name='master_for'))
+		identifier="i",
+		indexes="0..pe.number_of_resources - 1",
+		condition=rule.get_condition_group(name='master_for'))
 ```
 
 **Conditions**
