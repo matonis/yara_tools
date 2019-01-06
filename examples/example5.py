@@ -43,7 +43,7 @@ produces
 import "math"
 import "pe"
 
-rule kaspersky_stonedrill
+rule kaspersky_stonedrill : apt33 stonedrill
 {
 
 	strings:
@@ -66,34 +66,29 @@ rule kaspersky_stonedrill
 			for any i in (0..pe.number_of_resources - 1):
 			( 	
 				((math.entropy(pe.resources[i].offset, pe.resources[i].length) > 7.8) and 
-					(pe.resources[i].id == 101 and 
-					pe.resources[i].length > 20000 and 
-					pe.resources[i].language == 0 and 
-					not ($mz in (pe.resources[i].offset..pe.resources[i].offset + pe.resources[i].length))
-					)
+		(pe.resources[i].id == 101 and 
+		pe.resources[i].length > 20000 and 
+		pe.resources[i].language == 0 and 
+		not ($mz in (pe.resources[i].offset..pe.resources[i].offset + pe.resources[i].length))))
 			)
 
 
 }
 
 
+
 '''
 import yara_tools
 import yara
-import pprint
 
 resource_strings=['FindFirstFile','FindNextFile','FindResource','LoadResource']
 mz="This program cannot be run in DOS mode."
 
 #::Create rule name
-rule=yara_tools.create_rule(name="kaspersky_stonedrill",imports=['math','cuckoo'],includes=['myfile.yar'])
-
-#::Add imports
-rule.add_import(name="pe")
-
-#::Ordered definition of condition groups. 'core' will appear prior to 'for_loop' when compiled
-rule.create_condition_group(name="core",default_boolean='and')
-rule.create_condition_group(name="for_loop",default_boolean='and')
+#::Notice how we define our imports in our constructor.
+rule=yara_tools.create_rule(name="kaspersky_stonedrill",
+							imports=['math','pe'],
+							tags=['apt33','stonedrill'])
 
 #::Verify is PE
 rule.add_condition(condition="uint16(0) == 0x5A4D")
@@ -102,13 +97,14 @@ rule.add_condition(condition="uint16(0) == 0x5A4D")
 rule.add_strings(strings=resource_strings,identifier="a",condition="all of ($IDENTIFIER*)")
 rule.add_strings(strings=mz,identifier="mz")
 
-#::Add static conditions
+#::Add static conditions, these take precedent over all condition groups and enumerated first.
 rule.add_condition(condition="filesize < 700000")
 rule.add_condition(condition="pe.number_of_sections > 4")
 rule.add_condition(condition="pe.number_of_signatures == 0")
 rule.add_condition(condition="pe.number_of_resources > 1")
 rule.add_condition(condition="pe.number_of_resources < 15")
 
+#::Defining condition groups
 #::Create parent condition group, 'virtual' parameter sets this to be created in memory only
 rule.create_condition_group(name="master_for",virtual=True)
 
@@ -116,7 +112,8 @@ rule.create_condition_group(name="master_for",virtual=True)
 rule.create_condition_group(name="entropy_for",parent_group="master_for")
 rule.create_condition_group(name="resource_for",parent_group="master_for")
 
-#::Create a negated condition group using 'condition_modifier' parameter
+#::Create a negated condition group using 'condition_modifier' parameter.
+#::Parameter 'condition_modifier' allows us to negate it.
 rule.create_condition_group(name="not_mz",parent_group="resource_for",condition_modifier='not')
 
 #::Add static condition to condition group, 'entropy_for'
@@ -144,9 +141,11 @@ for_loop_format_str="""
 			)
 """
 #::Generate a completed nested rule via get_condition_group using the parent 'master_for' condition group
-rule.add_condition(condition=for_loop_format_str % rule.get_condition_group(name='master_for'),condition_group="for_loop")
+#::Since 'master_for' was declared as 'virtual', it exists only in memory.
+rule.add_condition(condition=for_loop_format_str % rule.get_condition_group(name='master_for'))
 
 
+#::Build rule without 
 generated_rule = rule.build_rule(condition_groups=True)
 
 try:
