@@ -211,7 +211,8 @@ A condition group is a construct that only exists in memory. A condition group i
 rule.build_rule(condition_groups=True)
 ```
 
-_*Simple Condition Groups*_
+_**Simple Condition Groups**_
+
 Condition groups are created via _create_condition_group()_ method.
 
 ```python
@@ -224,7 +225,8 @@ The following parameters can be provided to *create_condition_group* to modify i
 * *parent_group* - A reference to another condition group used in building complex relationships. Can be a list() or str()
 * *virtual* - Boolean. A virtual condition group is never committed to a rule. It is used to prototype condition groups, commonly used to retrieve compiled condition_group strings.
 
-_*Inline Assignment of Strings & Conditions To Condition Groups*_
+_**Inline Assignment of Strings & Conditions To Condition Groups**_
+
 All strings and conditions can be assigned to one or many condition groups via the *condition_group* parameter to each respective function.
 
 ```python
@@ -232,7 +234,7 @@ rule.create_condition_group(name="m1",default_boolean='or')
 rule.add_strings(strings="MyStringToFind",condition_group='m1')
 rule.add_condition('uint16(0x00) == 0x5a4d',condition_group='m1')
 ```
-_*Complex Condition Groups: Nesting Condition Groups*_
+_**Complex Condition Groups: Nesting Condition Groups**_
 
 Conditions groups can have a one to many relationship with other condition groups and nested within each other. Nested condition groups are created by referencing a related condition group known as its "parents" by using the parameter *parent_group*
 
@@ -243,7 +245,7 @@ In this example, a condition group is created and is related to parent groups "p
 
 Upon compile, conditions and expressions contained within "bc1" will be nested within condition groups "pc1" and "pc2."
 
-_*Virtual Condition Groups*_
+_**Virtual Condition Groups**_
 Virtual Condition Groups are a memory-only concept. It allows you to create a complex condition that is never committed to a rule. 
 
 There may be cases, conditions, or features that do not yet exist in YARA or yara_tools where you still may be able to apply a condition group construct. An easy example of this is the *for loop* in YARA. To achieve a *for loop*, you'll need to build a format string. 
