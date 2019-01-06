@@ -93,7 +93,7 @@ rule.add_import(name="my_custom_package")
 **Includes**
 
 ```python
-rule.add_include(include="other_rule.yar")
+rule.add_include(value="other_rule.yar")
 ```
 
 **Meta**
