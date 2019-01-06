@@ -56,6 +56,8 @@ except Exception as e:
 	print "Failed... oh noes! %s" % e
 	print my_rule
 ```
+**Visual Tutorial**
+![Visual Guide](https://github.com/matonis/yara_tools/yara_tools_visual_guide.png)
 
 **Getting Started**
 
