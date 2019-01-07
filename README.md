@@ -212,7 +212,7 @@ add_strings(...condition="my condition")
 
 # Complex Conditions & Condition Groups
 
-*yara_tools* introduces a concept known as *Condition Groups.*
+*yara_tools* introduces a new concept referred to as *Condition Groups.*
 
 Condition Groups are containers for conditions. 
 * A condition group may have one or many expressions within them. 
