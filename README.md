@@ -72,7 +72,8 @@ A parent "rule object" is created using the following method. All aspects of a r
 rule=yara_tools.create_rule(name="my_rule")
 ```
 
-*create_rule()* takes a number of parameters which assist in aspects of a rule.
+*create_rule()* takes a number of parameters which assist in setting various configurations of a rule.
+
 * _default_boolean_ - Default global condition operator
 * _default_condition_ - Default condition if no condition present. Default "all of them"
 * _default_identifier_ - Default string identifier.
