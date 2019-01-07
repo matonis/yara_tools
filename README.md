@@ -1,11 +1,12 @@
 yara_tools
 ===========
 
-Python bindings to author YARA rules using natural Python conventions instead of format strings. Additional features to automate and appropriately describe YARA rules programatically.  If YARA is the *"pattern matching swiss [Army] knife"* of the binary world, then *yara_tools* is the **butter knife** of signature generation! 
+Python bindings to author YARA rules using natural Python conventions. Additional features to automate YARA rules programatically.  If YARA is the *"pattern matching swiss [Army] knife"* of the binary world, then *yara_tools* is the **butter knife** of signature generation! 
 
 *"But hold on, @matonis... isn't a butter knife only a utensil used to cut a sliver of cold butter which is then aggressively wiped on a crusty piece of bread?"* 
 
 **WRONG!** 
+
 Did you know that a household butter knife can be used as:
 * A wedge
 * A flat-head screwdriver
@@ -56,10 +57,10 @@ except Exception as e:
 	print "Failed... oh noes! %s" % e
 	print my_rule
 ```
-### Visual Guide
-![Visual Guide](https://github.com/matonis/yara_tools/blob/alpha_release/yara_tools_visual_guide.png)
+# Visual Guide
+![Visual Guide](https://github.com/matonis/yara_tools/blob/master/yara_tools_visual_guide.png)
 
-### Getting Started
+# Getting Started
 
 Begin by importing yara_tools:
 ```python
@@ -86,20 +87,20 @@ rule=yara_tools.create_rule(name="my_rule")
 * _tags_ - String or List to include tags.
 
 
-**Imports**
+### Imports
 
 ```python
 rule.add_import(name="pe")
 rule.add_import(name="cuckoo")
 rule.add_import(name="my_custom_package")
 ```
-**Includes**
+### Includes
 
 ```python
 rule.add_include(value="other_rule.yar")
 ```
 
-**Meta**
+### Metadata
 
 Meta fields in YARA are completely arbitrary. Add as many as you would like.
 ```python
@@ -107,7 +108,7 @@ rule.add_meta(key="author",value="matonis")
 rule.add_meta(key="purpose",value="Testing my first yara_tools YARA rule!")
 ```
 
-**Strings**
+### Strings
 
 yara_tools allows for creation of traditional string constants and is controlled through the ***add_strings*** function. 
 
@@ -140,7 +141,7 @@ rule.add_strings(strings=['MyStringToFind2','ATimeToFindAString','ThirdTimes A C
 ```
 * In this example, all strings will be identified with the $TESTING prefix.
 
-**Binary Strings**
+### Binary Strings
 
 *yara_tools* has support for binary data blobs which are translated into hex-strings. Parameters used in add_strings also apply to those used in *add_binary_strings*.
 
@@ -155,7 +156,7 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
 						comment="Applying size limits",size_limit=5)
 ```
 
-**Wildcard Binary Strings**
+### Wildcard Binary Strings
 
 *yara_tools* also lets you add binary strings which have been wildcarded, most applicable to analyzed assembly. This is possible using the *add_binary_as_string* method.
 
@@ -164,7 +165,7 @@ rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 
 ```
 
-**For Loops**
+### For Loops
 
 *yara_tools* contains a built-in method to create for loops. The following method returns a string which can later be used in conditions and condition groups.
 
@@ -175,7 +176,7 @@ for_loop=rule.create_for_loop(expression="any",
 		condition=rule.get_condition_group(name='master_for'))
 ```
 
-**Conditions**
+### Conditions
 
 Conditions created via *add_condition* are order-based when compiled. It is recommended to apply file-based constraints/conditions prior to strings.
 * If a condition was provided inline to a string via *add_strings* or *add_binary_strings* then no control is needed as these carry priority.
@@ -197,7 +198,7 @@ You can also set an authoritative condition. No matter what conditions/expressio
 rule.add_authoritative_condition(condition="any of them")
 ```
 
-**Conditions And Strings**
+### Conditions And Strings
 
 All functions adding strings to a YARA rule accept the following parameters which enable developers to add conditions to the following methods:
 * *add_strings*
@@ -209,9 +210,9 @@ All functions adding strings to a YARA rule accept the following parameters whic
 add_strings(...condition="my condition")
 ```
 
-**Complex Conditions & Condition Groups**
+# Complex Conditions & Condition Groups
 
-*yara_tools* introduces a concept known as *Condition Groups.*
+*yara_tools* introduces a new concept referred to as *Condition Groups.*
 
 Condition Groups are containers for conditions. 
 * A condition group may have one or many expressions within them. 
@@ -226,7 +227,7 @@ A condition group is a construct that only exists in memory. A condition group i
 rule.build_rule(condition_groups=True)
 ```
 
-_**Simple Condition Groups**_
+### Simple Condition Groups
 
 Condition groups are created via _create_condition_group()_ method.
 
@@ -240,7 +241,7 @@ The following parameters can be provided to *create_condition_group* to modify i
 * *parent_group* - A reference to another condition group used in building complex relationships. Can be a list() or str()
 * *virtual* - Boolean. A virtual condition group is never committed to a rule. It is used to prototype condition groups, commonly used to retrieve compiled condition_group strings.
 
-_**Inline Assignment of Strings & Conditions To Condition Groups**_
+### Inline Assignment of Strings & Conditions To Condition Groups
 
 All strings and conditions can be assigned to one or many condition groups via the *condition_group* parameter to each respective function.
 
@@ -249,7 +250,7 @@ rule.create_condition_group(name="m1",default_boolean='or')
 rule.add_strings(strings="MyStringToFind",condition_group='m1')
 rule.add_condition('uint16(0x00) == 0x5a4d',condition_group='m1')
 ```
-_**Complex Condition Groups: Nesting Condition Groups**_
+### Complex Condition Groups: Nesting Condition Groups
 
 Conditions groups can have a one to many relationship with other condition groups and nested within each other. Nested condition groups are created by referencing a related condition group known as its "parents" by using the parameter *parent_group*
 
@@ -260,7 +261,7 @@ In this example, a condition group is created and is related to parent groups "p
 
 Upon compile, conditions and expressions contained within "bc1" will be nested within condition groups "pc1" and "pc2."
 
-_**Virtual Condition Groups**_
+### Virtual Condition Groups
 
 Virtual Condition Groups are a memory-only concept. It allows you to create a complex condition that is never committed to a rule. 
 
@@ -278,7 +279,7 @@ All conditions nested under a virtual condition group will reside in memory, unl
 rule.get_condition_group(name='master_for')
 ```
 
-**Building A Rule**
+# Building A Rule
 
 Rules are built in *yara_tools* only if strings or a condition is present. A string-based rule is returned via:
 
