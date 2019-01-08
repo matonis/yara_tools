@@ -1,6 +1,8 @@
 yara_tools
 ===========
 
+[Read the blog!](https://medium.com/@matonis/yara-tools-create-yara-rules-in-python-dbea561e94ed)
+
 Python bindings to author YARA rules using natural Python conventions. Additional features to automate YARA rules programatically.  If YARA is the *"pattern matching swiss [Army] knife"* of the binary world, then *yara_tools* is the **butter knife** of signature generation! 
 
 *"But hold on, @matonis... isn't a butter knife only a utensil used to cut a sliver of cold butter which is then aggressively wiped on a crusty piece of bread?"* 
