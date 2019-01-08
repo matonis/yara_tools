@@ -31,7 +31,7 @@ For more information on authoring YARA rules, please [read the docs.](https://ya
 python setup.py build && sudo python setup.py install
 ```
 
-### Usage
+# Usage
 *yara_tools* has facilities for four primary aspects of a YARA rule:
 
 * Imports
