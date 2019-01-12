@@ -155,7 +155,7 @@ Size limits can also be applied via the *add_binary_strings* method.
 
 ```python
 rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
-						comment="Applying size limits",size_limit=5)
+			comment="Applying size limits",size_limit=5)
 ```
 
 ### Wildcard Binary Strings
@@ -165,6 +165,11 @@ rule.add_binary_strings(data=open(sys.argv[1],'rb').read(),
 ```python
 rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 
+```
+### Regex
+
+```python
+rule.add_regex(regex="\d{1,3}\.[a-z]*)
 ```
 
 ### For Loops
