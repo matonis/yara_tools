@@ -167,9 +167,10 @@ rule.add_binary_as_string(data="4d5a9000??000000??000000ffff0000")
 
 ```
 ### Regex
+*yara_tools* also lets you add a regex. *yara_tools* can receive a PCRE string which is translated into the appropriate nomenclature.
 
 ```python
-rule.add_regex(regex="\d{1,3}\.[a-z]*)
+rule.add_regex(regex="\d{1,3}\.[a-z]*")
 ```
 
 ### For Loops
